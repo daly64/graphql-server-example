@@ -1,13 +1,28 @@
 import { makeExecutableSchema } from "@graphql-tools/schema";
-import { loadSchemaSync } from "@graphql-tools/load";
-import { GraphQLFileLoader } from "@graphql-tools/graphql-file-loader";
 import resolvers from "./resolvers.js";
 
-// A number that we'll increment over time to simulate subscription events
+const typeDefs= `#graphql 
+type Message {
+  id: ID!
+  text: String!
+}
 
-const typeDefs = loadSchemaSync("api/graphql/typeDefs.graphql", {
-  loaders: [new GraphQLFileLoader()],
-});
+type Mutation {
+  createMessage(text: String!): Message
+  updateMessage(id: ID!, text: String!): Message
+  deleteMessage(id: ID!): Message
+}
+type Query {
+  messages: [Message!]
+  message(id: ID!): Message
+}
+type Subscription {
+  messages: [Message!]
+}
+`
+
+
+
 
 // Create schema, which will be used separately by ApolloServer and
 // the WebSocket server.

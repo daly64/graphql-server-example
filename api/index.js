@@ -44,6 +44,10 @@ const server = new ApolloServer({
   ],
 });
 
+app.get("/", (req, res) => {
+  res.redirect("/graphql");
+});
+
 // 7. Start the Apollo server
 (async () => {
   await server.start();
