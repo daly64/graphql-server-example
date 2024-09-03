@@ -2,6 +2,10 @@ import { PubSub } from "graphql-subscriptions";
 
 const pubsub = new PubSub();
 
+function publishMessages() {
+ pubsub.publish("NEW_MESSAGE", { messages });
+}
+
 const messages = [
   { id: "1", text: "message1" },
   { id: "2", text: "message2" },
@@ -22,7 +26,7 @@ export const resolvers = {
         text,
       };
       messages.push(newMessage);
-      pubsub.publish("NEW_MESSAGE", { messages });
+      publishMessages();
       return newMessage;
     },
 
@@ -32,7 +36,7 @@ export const resolvers = {
         throw new Error("Message not found");
       }
       message.text = text;
-      pubsub.publish("NEW_MESSAGE", { messages });
+      publishMessages();
       return message;
     },
 
@@ -42,7 +46,7 @@ export const resolvers = {
         throw new Error("Message not found");
       }
       const deletedMessage = messages.splice(index, 1)[0];
-      pubsub.publish("NEW_MESSAGE", { messages });
+      publishMessages();
       return deletedMessage;
     },
   },
@@ -50,7 +54,7 @@ export const resolvers = {
   Subscription: {
     messages: {
       subscribe: () => {
-        setTimeout(() => pubsub.publish("NEW_MESSAGE", { messages }), 1000);
+        setTimeout(() => publishMessages(), 1000);
         return pubsub.asyncIterator(["NEW_MESSAGE"]);
       },
     },
