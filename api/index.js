@@ -1,37 +1,37 @@
 import { ApolloServer } from "@apollo/server";
-import express from "express";
 import { expressMiddleware } from "@apollo/server/express4";
-import cors from "cors";
-import typeDefs from "./graphql/typeDefs.js";
-import resolvers from "./graphql/resolvers.js";
-
-import { createServer } from "http";
 import { ApolloServerPluginDrainHttpServer } from "@apollo/server/plugin/drainHttpServer";
-import { makeExecutableSchema } from "@graphql-tools/schema";
-import { WebSocketServer } from "ws";
+import bodyParser from "body-parser";
+import cors from "cors";
+import express from "express";
 import { useServer } from "graphql-ws/lib/use/ws";
-
+import { createServer } from "http";
+import { WebSocketServer } from "ws";
+import schema from "./graphql/schema.js";
+// 1. Create an HTTP server with Express
+const PORT = 3000;
 const app = express();
-const httpServer = createServer(app);
 
-const schema = makeExecutableSchema({ typeDefs, resolvers });
+// 2. Create a WebSocket server with ws
+const httpServer = createServer(app);
 const wsServer = new WebSocketServer({
   server: httpServer,
-  path: "/subscriptions",
+  path: "/graphql",
 });
-const serverCleanup = useServer(
-  {
-    schema,
-    introspection: true,
-    playground: true,
-  },
-  wsServer
-);
 
+
+// 3. Use graphql-ws to handle WebSocket requests
+const serverCleanup = useServer({ schema }, wsServer);
+
+// 4. Configure Apollo Server
 const server = new ApolloServer({
   schema,
+
+  // 5. Add a plugin to drain the HTTP connection
   plugins: [
     ApolloServerPluginDrainHttpServer({ httpServer }),
+
+    // 6. Add a plugin to drain the WebSocket server
     {
       async serverWillStart() {
         return {
@@ -44,26 +44,16 @@ const server = new ApolloServer({
   ],
 });
 
+// 7. Start the Apollo server
+(async () => {
+  await server.start();
 
+  // 8. Add HTTP middleware for Apollo
+  app.use("/graphql", cors(), bodyParser.json(), expressMiddleware(server));
 
-
-
-// const server = new ApolloServer({ typeDefs, resolvers });
-
-
-
-
-const port = 3000;
-app.use(cors());
-
-app.get("/", (req, res) => {
-  res.send("<a href='/graphql'>Go to GraphQL</a>");
-});
-
-await server.start();
-
-app.use("/graphql", cors(), express.json(), expressMiddleware(server));
-
-app.listen(port, () => {
-  console.log(`Example app listening on port ${port}`);
-});
+  // 9. Start the HTTP server
+  httpServer.listen(PORT, () => {
+    console.log(`GraphQL server ready at http://localhost:${PORT}`);
+    console.log(`WebSocket endpoint ready at ws://localhost:${PORT}/graphql`);
+  });
+})();
