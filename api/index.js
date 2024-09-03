@@ -19,7 +19,14 @@ const wsServer = new WebSocketServer({
   server: httpServer,
   path: "/subscriptions",
 });
-const serverCleanup = useServer({ schema }, wsServer);
+const serverCleanup = useServer(
+  {
+    schema,
+    introspection: true,
+    playground: true,
+  },
+  wsServer
+);
 
 const server = new ApolloServer({
   schema,
